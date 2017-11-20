@@ -7,17 +7,7 @@ public class SerialEventRecorder implements EventRecorder {
     }
 
     @Override
-    public long recordsForLastMinute() {
-        return 0;
-    }
-
-    @Override
-    public long recordsForLastHour() {
-        return 0;
-    }
-
-    @Override
-    public long recordsForLastDay() {
+    public long recordsForLastPeriod(long timePeriod) {
         return 0;
     }
 }

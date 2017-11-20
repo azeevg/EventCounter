@@ -4,7 +4,18 @@ public interface EventRecorder {
     long DAY = HOUR * 24;
 
     void record(Event event);
-    long recordsForLastMinute();
-    long recordsForLastHour();
-    long recordsForLastDay();
+
+    long recordsForLastPeriod(long timePeriod);
+
+    default long recordsForLastMinute() {
+        return recordsForLastPeriod(MINUTE);
+    }
+
+    default long recordsForLastHour() {
+        return recordsForLastPeriod(HOUR);
+    }
+
+    default long recordsForLastDay() {
+        return recordsForLastPeriod(DAY);
+    }
 }
