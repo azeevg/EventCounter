@@ -1,0 +1,5 @@
+*
+!*.java
+!*.gradle
+!/.gitignore
+!/README.md
