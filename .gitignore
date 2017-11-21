@@ -1,5 +1,8 @@
 *
-!*.java
+
 !*.gradle
 !/.gitignore
 !/README.md
+!/src/main/java/SerialEventCounter.java
+!/src/main/java/EventsBucket.java
+!/src/main/java/EventCounter.java
