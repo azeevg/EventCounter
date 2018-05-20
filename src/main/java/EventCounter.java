@@ -1,5 +1,6 @@
 public interface EventCounter {
     void addRecord();
-    long getLastMinute();
-    long getLastHour();
+    int getLastMinute();
+    int getLastHour();
+    int get(Long period);
 }

@@ -55,6 +55,24 @@ public class EventCounterTest {
         Assert.assertEquals(10000, counter.getLastMinute());
     }
 
+    @Test
+    public void concurrentTest() throws InterruptedException {
+        EventCounter counter = new EventCounterImpl();
+        int n = 15;
+        CountDownLatch latch = new CountDownLatch(n);
+
+
+
+        for (int i = 0; i < n; i++) {
+            new Thread(new RecordProducer(i + "", counter, latch, 1000)).start();
+        }
+
+        latch.await();
+
+        Assert.assertEquals(15000, counter.getLastHour());
+    }
+
+
     class RecordProducer implements Runnable {
         private final String name;
         private final EventCounter counter;
@@ -63,11 +81,7 @@ public class EventCounterTest {
         private final boolean logged;
 
         RecordProducer(String name, EventCounter counter, CountDownLatch latch, int n) {
-            this.name = name;
-            this.counter = counter;
-            this.latch = latch;
-            this.n = n;
-            this.logged = true;
+         this(name, counter, latch, n, true);
         }
 
         public RecordProducer(String name, EventCounter counter, CountDownLatch latch, int n, boolean logged) {

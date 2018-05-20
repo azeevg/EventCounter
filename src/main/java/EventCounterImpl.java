@@ -1,54 +1,59 @@
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class EventCounterImpl implements EventCounter {
     private static final Long HOUR_MILLIS = 3_600_000L;
     private static final Long MINUTE_MILLIS = 60_000L;
-    private final ConcurrentLinkedQueue<Long> queueMinute = new ConcurrentLinkedQueue<>();
-    private final ConcurrentLinkedQueue<Long> queueHour = new ConcurrentLinkedQueue<>();
-    private ConcurrentHashMap<Long, ConcurrentLinkedQueue<Long>> queues = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, ConcurrentLinkedQueue<Long>> queues = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, Lock> locks = new ConcurrentHashMap<>();
 
-    public EventCounterImpl() {
-        queues.put(MINUTE_MILLIS, queueMinute);
-        queues.put(HOUR_MILLIS, queueHour);
+    EventCounterImpl() {
+        this(MINUTE_MILLIS, HOUR_MILLIS);
+    }
 
-        new Thread(() -> {
-            try {
-                while (true) {
-                    for (Map.Entry<Long, ConcurrentLinkedQueue<Long>> entry : queues.entrySet()) {
-                        cleanUp(entry.getValue(), entry.getKey());
-                    }
-                    wait(1000);
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        });
+    EventCounterImpl(long... periods) {
+        for (long period : periods) {
+            queues.put(period, new ConcurrentLinkedQueue<>());
+            locks.put(period, new ReentrantLock());
+        }
     }
 
     @Override
     public void addRecord() {
         long currentTime = System.currentTimeMillis();
-        queueHour.add(currentTime);
-        queueMinute.add(currentTime);
+        for (Map.Entry<Long, ConcurrentLinkedQueue<Long>> entry : queues.entrySet()) {
+            entry.getValue().add(currentTime);
+        }
     }
 
     @Override
-    public long getLastMinute() {
-        cleanUp(queueMinute, MINUTE_MILLIS);
-        return queueMinute.size();
+    public int getLastMinute() {
+        return get(MINUTE_MILLIS);
     }
 
     @Override
-    public long getLastHour() {
-        cleanUp(queueHour, HOUR_MILLIS);
-        return queueHour.size();
+    public int getLastHour() {
+        return get(HOUR_MILLIS);
     }
 
-    private void cleanUp(ConcurrentLinkedQueue<Long> queue, long offset) {
+    @Override
+    public int get(Long period) {
+        ConcurrentLinkedQueue<Long> queue = queues.get(period);
+
+        if (queue == null) {
+            throw new IllegalArgumentException();
+        }
+        cleanupQueue(period);
+        return queue.size();
+    }
+
+    private void cleanupQueue(Long period) {
         long currentTime = System.currentTimeMillis();
-        while (queue.peek() != null && currentTime - queue.peek() > offset) {
+        ConcurrentLinkedQueue<Long> queue = queues.get(period);
+        while (queue.peek() != null && currentTime - queue.peek() > period) {
             queue.remove();
         }
     }
