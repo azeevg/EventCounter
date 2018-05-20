@@ -2,6 +2,8 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 public class EventCounterTest {
 
@@ -58,20 +60,37 @@ public class EventCounterTest {
     @Test
     public void concurrentTest() throws InterruptedException {
         EventCounter counter = new EventCounterImpl();
-        int n = 15;
-        CountDownLatch latch = new CountDownLatch(n);
+        int threadsNumber = 15;
+        int recordsNumber = 100000;
 
+        runThreads(counter, threadsNumber, recordsNumber, true);
+    }
 
-
-        for (int i = 0; i < n; i++) {
-            new Thread(new RecordProducer(i + "", counter, latch, 1000)).start();
+    private void runThreads(EventCounter counter, int threadsNumber, int recordsNumber, boolean print) throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(threadsNumber);
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        for (int i = 0; i < threadsNumber; i++) {
+            if (i / 3 == 1) {
+                long timeout = random.nextLong(500, 1000);
+                System.out.println("Sleep for " + timeout);
+                TimeUnit.MILLISECONDS.sleep(timeout);
+            }
+            new Thread(new RecordProducer(i + "", counter, latch, recordsNumber, print)).start();
         }
 
         latch.await();
 
-        Assert.assertEquals(15000, counter.getLastHour());
+        Assert.assertEquals(threadsNumber * recordsNumber, counter.getLastHour());
     }
 
+    @Test
+    public void customPeriodsTest() throws InterruptedException {
+        EventCounter counter = new EventCounterImpl(true, 1000L, 2000L, EventCounterImpl.HOUR_MILLIS);
+        int threadsNumber = 15;
+        int recordsNumber = 1000000;
+
+        runThreads(counter, threadsNumber, recordsNumber, false);
+    }
 
     class RecordProducer implements Runnable {
         private final String name;
@@ -81,7 +100,7 @@ public class EventCounterTest {
         private final boolean logged;
 
         RecordProducer(String name, EventCounter counter, CountDownLatch latch, int n) {
-         this(name, counter, latch, n, true);
+            this(name, counter, latch, n, true);
         }
 
         public RecordProducer(String name, EventCounter counter, CountDownLatch latch, int n, boolean logged) {
