@@ -1,10 +1,6 @@
 public interface EventCounter {
-
-    void submitEvent();
-
-    long recordsForLastMinute();
-
-    long recordsForLastHour();
-
-    long recordsForLastDay();
+    void addRecord();
+    int getLastMinute();
+    int getLastHour();
+    int get(Long period);
 }
