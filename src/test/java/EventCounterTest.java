@@ -1,6 +1,8 @@
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
+
 public class EventCounterTest {
 
     @Test
@@ -24,4 +26,45 @@ public class EventCounterTest {
         Assert.assertEquals(lastHour, 1);
     }
 
+    class RecordProducer implements Runnable {
+        private final String name;
+        private final EventCounter  counter;
+        private final CountDownLatch latch;
+        private final int n;
+
+        RecordProducer(String name, EventCounter counter, CountDownLatch latch, int n) {
+            this.name = name;
+            this.counter = counter;
+            this.latch = latch;
+            this.n = n;
+        }
+
+        @Override
+        public void run() {
+            System.out.println(name + " stated.");
+            for (int i = 0; i < n; i++) {
+                if (i % 10 == 0) {
+                    System.out.println(name + " i=" + i);
+                }
+                counter.addRecord();
+            }
+            System.out.println(name + " finished.");
+
+            latch.countDown();
+        }
+    }
+
+    @Test
+    public void concurrent100InsertionsTest() throws InterruptedException {
+        EventCounter counter = new EventCounterImpl();
+        CountDownLatch latch = new CountDownLatch(2);
+
+        new Thread(new RecordProducer("First", counter, latch, 50)).start();
+        new Thread(new RecordProducer("Second", counter, latch, 50)).start();
+
+        latch.await();
+
+        Assert.assertEquals(counter.getLastHour(), 100);
+        Assert.assertEquals(counter.getLastMinute(), 100);
+    }
 }
