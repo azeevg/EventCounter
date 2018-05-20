@@ -14,9 +14,9 @@ public class EventCounterTest {
     }
 
     @Test
-    public void firstIncrementTest() {
+    public void firstRecordTest() {
         EventCounter counter = new EventCounterImpl();
-        counter.increment();
+        counter.addRecord();
         long lastMinute = counter.getLastMinute();
         long lastHour = counter.getLastHour();
 

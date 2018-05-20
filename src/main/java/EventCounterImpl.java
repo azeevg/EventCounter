@@ -1,6 +1,7 @@
 public class EventCounterImpl implements EventCounter {
+
     @Override
-    public void increment() {
+    public void addRecord() {
 
     }
 

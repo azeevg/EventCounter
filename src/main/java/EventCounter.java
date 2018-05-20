@@ -1,5 +1,5 @@
 public interface EventCounter {
-    void increment();
+    void addRecord();
     long getLastMinute();
     long getLastHour();
 }
