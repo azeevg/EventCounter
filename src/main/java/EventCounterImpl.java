@@ -9,12 +9,12 @@ public class EventCounterImpl implements EventCounter {
     public void addRecord() {
         long currentTime = System.currentTimeMillis();
 
-        synchronized (queueHour) {
+//        synchronized (queueHour) {
             queueHour.add(currentTime);
-        }
-        synchronized (queueMinute) {
+//        }
+//        synchronized (queueMinute) {
             queueMinute.add(currentTime);
-        }
+//        }
     }
 
     @Override

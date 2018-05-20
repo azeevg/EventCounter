@@ -41,7 +41,7 @@ public class EventCounterTest {
 
         @Override
         public void run() {
-            System.out.println(name + " stated.");
+            System.out.println(name + " started.");
             for (int i = 0; i < n; i++) {
                 if (i % 10 == 0) {
                     System.out.println(name + " i=" + i);
