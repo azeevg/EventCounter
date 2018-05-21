@@ -57,21 +57,12 @@ public class EventCounterTest {
         Assert.assertEquals(10000, counter.getLastMinute());
     }
 
-    @Test
-    public void concurrentTest() throws InterruptedException {
-        EventCounter counter = new EventCounterImpl();
-        int threadsNumber = 15;
-        int recordsNumber = 100000;
-
-        runThreads(counter, threadsNumber, recordsNumber, true);
-    }
-
     private void runThreads(EventCounter counter, int threadsNumber, int recordsNumber, boolean print) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(threadsNumber);
         ThreadLocalRandom random = ThreadLocalRandom.current();
         for (int i = 0; i < threadsNumber; i++) {
-            if (i / 3 == 1) {
-                long timeout = random.nextLong(500, 1000);
+            if (i / 3 == 0) {
+                long timeout = random.nextLong(100, 300);
                 System.out.println("Sleep for " + timeout);
                 TimeUnit.MILLISECONDS.sleep(timeout);
             }
@@ -84,12 +75,24 @@ public class EventCounterTest {
     }
 
     @Test
-    public void customPeriodsTest() throws InterruptedException {
-        EventCounter counter = new EventCounterImpl(true, 1000L, 2000L, EventCounterImpl.HOUR_MILLIS);
+    public void concurrentTest() throws InterruptedException {
+        EventCounter counter = new EventCounterImpl();
         int threadsNumber = 15;
-        int recordsNumber = 1000000;
+        int recordsNumber = 100000;
+
+        runThreads(counter, threadsNumber, recordsNumber, true);
+    }
+
+    @Test
+    public void customPeriodsTest() throws InterruptedException {
+        EventCounter counter = new EventCounterImpl(PrintingMode.RANGE, 1000L, 2000L, EventCounterImpl.HOUR_MILLIS);
+        int threadsNumber = 1;
+        int recordsNumber = 100000;
 
         runThreads(counter, threadsNumber, recordsNumber, false);
+        Assert.assertTrue(counter.getRange(1000L) <= 1000L);
+        Assert.assertTrue(counter.getRange(2000L) <= 2000L);
+        Assert.assertTrue(counter.getRange(EventCounterImpl.HOUR_MILLIS) <= EventCounterImpl.HOUR_MILLIS);
     }
 
     class RecordProducer implements Runnable {
@@ -103,7 +106,7 @@ public class EventCounterTest {
             this(name, counter, latch, n, true);
         }
 
-        public RecordProducer(String name, EventCounter counter, CountDownLatch latch, int n, boolean logged) {
+        RecordProducer(String name, EventCounter counter, CountDownLatch latch, int n, boolean logged) {
             this.name = name;
             this.counter = counter;
             this.latch = latch;

@@ -3,4 +3,5 @@ public interface EventCounter {
     int getLastMinute();
     int getLastHour();
     int get(Long period);
+    long getRange(Long period);
 }

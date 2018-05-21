@@ -9,7 +9,7 @@ public enum PrintingMode {
         this.value = value;
     }
 
-    boolean isPrintingEnabled() {
+    boolean isEnabled() {
         return this != NONE;
     }
 }
