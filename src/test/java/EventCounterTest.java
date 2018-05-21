@@ -46,6 +46,7 @@ public class EventCounterTest {
     @Test
     public void concurrentSimpleTest() throws InterruptedException {
         EventCounter counter = new EventCounterImpl();
+        counter.startReducingWorker();
         CountDownLatch latch = new CountDownLatch(2);
 
         new Thread(new RecordProducer("First", counter, latch, 6000)).start();
@@ -77,6 +78,8 @@ public class EventCounterTest {
     @Test
     public void concurrentTest() throws InterruptedException {
         EventCounter counter = new EventCounterImpl();
+        counter.startReducingWorker();
+
         int threadsNumber = 15;
         int recordsNumber = 100000;
 
@@ -85,8 +88,10 @@ public class EventCounterTest {
 
     @Test
     public void customPeriodsTest() throws InterruptedException {
-        EventCounter counter = new EventCounterImpl(PrintingMode.RANGE, 1000L, 2000L, EventCounterImpl.HOUR_MILLIS);
-        int threadsNumber = 1;
+        EventCounter counter = new EventCounterImpl(1000L, 2000L, EventCounterImpl.HOUR_MILLIS);
+        counter.startReducingWorker();
+        counter.startPrintingWorker(true);
+        int threadsNumber = 15;
         int recordsNumber = 100000;
 
         runThreads(counter, threadsNumber, recordsNumber, false);

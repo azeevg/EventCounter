@@ -1,7 +1,10 @@
 import java.util.Iterator;
 import java.util.Map;
 import java.util.StringJoiner;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -10,29 +13,33 @@ public class EventCounterImpl implements EventCounter {
     private static final Long MINUTE_MILLIS = 60_000L;
     private static final long PRINTING_DELAY = 100;
     private static final long PRINTING_INITIAL_DELAY = 0;
-    private static final long REDUCING_DELAY = 1000;
+    private static final long REDUCING_DELAY = 100;
     private static final long REDUCING_INITIAL_DELAY = 1000;
     private final ConcurrentHashMap<Long, ConcurrentLinkedQueue<Long>> queues = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Long, Lock> locks = new ConcurrentHashMap<>();
+    private final ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(2);
 
     EventCounterImpl() {
-        this(PrintingMode.NONE, MINUTE_MILLIS, HOUR_MILLIS);
+        this(MINUTE_MILLIS, HOUR_MILLIS);
     }
 
-    EventCounterImpl(PrintingMode printingMode, long... periods) {
+    EventCounterImpl(long... periods) {
         for (long period : periods) {
             queues.put(period, new ConcurrentLinkedQueue<>());
             locks.put(period, new ReentrantLock());
         }
+    }
 
-        ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
+    @Override
+    public void startPrintingWorker(boolean includingRange) {
+        Runnable printingWorker = getPrintingWorker(includingRange);
+        executor.scheduleWithFixedDelay(printingWorker, PRINTING_INITIAL_DELAY, PRINTING_DELAY, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public void startReducingWorker() {
         Runnable reducingWorker = getReducingWorker();
         executor.scheduleWithFixedDelay(reducingWorker, REDUCING_INITIAL_DELAY, REDUCING_DELAY, TimeUnit.MILLISECONDS);
-
-        if (printingMode.isEnabled()) {
-            Runnable printingWorker = getPrintingWorker(printingMode == PrintingMode.RANGE);
-            executor.scheduleWithFixedDelay(printingWorker, PRINTING_INITIAL_DELAY, PRINTING_DELAY, TimeUnit.MILLISECONDS);
-        }
     }
 
     private Runnable getReducingWorker() {
@@ -89,6 +96,7 @@ public class EventCounterImpl implements EventCounter {
     public long getRange(Long period) {
         ConcurrentLinkedQueue<Long> queue = getQueue(period);
         synchronized (locks.get(period)) {
+            cleanupQueue(period, queue);
             Iterator<Long> iterator = queue.iterator();
 
             if (!iterator.hasNext()) {
@@ -116,9 +124,9 @@ public class EventCounterImpl implements EventCounter {
     }
 
     private void cleanupQueue(Long period, ConcurrentLinkedQueue<Long> queue) {
-        long currentTime = System.currentTimeMillis();
         System.out.println("Cleanup started: " + period / 1000);
         int removed = 0;
+        final long currentTime = System.currentTimeMillis();
         synchronized (locks.get(period)) {
             while (queue.peek() != null && currentTime - queue.peek() > period) {
                 queue.remove();
