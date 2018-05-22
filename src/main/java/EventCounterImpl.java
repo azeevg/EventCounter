@@ -37,6 +37,11 @@ public class EventCounterImpl implements EventCounter {
     }
 
     @Override
+    public void shutdown() {
+        executor.shutdown();
+    }
+
+    @Override
     public void startReducingWorker() {
         Runnable reducingWorker = getReducingWorker();
         executor.scheduleWithFixedDelay(reducingWorker, REDUCING_INITIAL_DELAY, REDUCING_DELAY, TimeUnit.MILLISECONDS);

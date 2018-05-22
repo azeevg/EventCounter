@@ -56,6 +56,7 @@ public class EventCounterTest {
 
         Assert.assertEquals(10000, counter.getLastHour());
         Assert.assertEquals(10000, counter.getLastMinute());
+        counter.shutdown();
     }
 
     private void runThreads(EventCounter counter, int threadsNumber, int recordsNumber, boolean print) throws InterruptedException {
@@ -84,6 +85,7 @@ public class EventCounterTest {
         int recordsNumber = 100000;
 
         runThreads(counter, threadsNumber, recordsNumber, true);
+        counter.shutdown();
     }
 
     @Test
@@ -98,6 +100,8 @@ public class EventCounterTest {
         Assert.assertTrue(counter.getRange(1000L) <= 1000L);
         Assert.assertTrue(counter.getRange(2000L) <= 2000L);
         Assert.assertTrue(counter.getRange(EventCounterImpl.HOUR_MILLIS) <= EventCounterImpl.HOUR_MILLIS);
+
+        counter.shutdown();
     }
 
     class RecordProducer implements Runnable {

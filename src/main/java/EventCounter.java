@@ -9,6 +9,8 @@ public interface EventCounter {
 
     void startPrintingWorker(boolean withRange);
 
+    void shutdown();
+
     int get(Long period);
 
     long getRange(Long period);
